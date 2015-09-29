@@ -15,6 +15,6 @@ func NewError(msg string) GError {
 }
 
 func (e GError) Error() string {
-	return fmt.Sprintf("at %v, %s",
-		e.When, e.What)
+	return fmt.Sprintf("%s %v", e.What,
+		e.When)
 }

@@ -22,10 +22,11 @@ type GamePlayer struct {
 	GroupSpectating *GameGroup
 }
 
-func (p *GamePlayer) Update(session sockjs.Session, id string) {
+func (p *GamePlayer) Update(session sockjs.Session, id string, name string) {
 	oldId := p.ID
 	fmt.Println("old id is", oldId)
 	p.ID = id
+	p.Name = name
 	p.Session = &session
 	delete(players, oldId)
 	fmt.Println("old id removed", oldId)
@@ -33,15 +34,29 @@ func (p *GamePlayer) Update(session sockjs.Session, id string) {
 	fmt.Println("new id added", p.ID)
 }
 
-func Register(session sockjs.Session, oldId string, name string) {
+func Register(session sockjs.Session, oldId string, name string) error {
 	if player, ok := FindPlayer(oldId); ok {
-		player.Update(session, session.ID())
+		player.Update(session, session.ID(), name)
 		fmt.Println("Find an existed player & update it")
+		return nil
 	} else {
+		if p := FindPlayerByName(name); p != nil {
+			return NewError("The name is already registered!")
+		}
 		id := session.ID()
 		players[id] = &GamePlayer{id, name, 0, &session, nil, nil, nil}
 		fmt.Println("Register as new")
+		return nil
 	}
+}
+
+func FindPlayerByName(name string) *GamePlayer {
+	for _, p := range players {
+		if p.Name == name {
+			return p
+		}
+	}
+	return nil
 }
 
 func FindPlayer(id string) (player *GamePlayer, ok bool) {

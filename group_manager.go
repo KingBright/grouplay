@@ -57,9 +57,9 @@ func (g *GameGroup) Exit(p *GamePlayer) error {
 			if player.GroupHosted != nil {
 				player.GroupHosted.Host = nil
 				player.GroupHosted = nil
+				delete(groups, g.ID)
 			}
-			// Remove old mapping
-			delete(groups, g.ID)
+			// Set new mapping
 			if g.Players.Len() > 0 {
 				if g.Host == nil {
 					newHost := g.Players.Front().Value.(*GamePlayer)

@@ -52,6 +52,7 @@ func handleMsg(session sockjs.Session, msg string) {
 					Hoster bool   `json:"isHoster"`
 					OK     bool   `json:"ok"`
 				}{ID: player.GroupHosted.ID, Hoster: true, OK: true}, true)
+				NotifyGroupList()
 			} else {
 				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
 			}
@@ -59,8 +60,6 @@ func handleMsg(session sockjs.Session, msg string) {
 			err := NewError("No user found with id " + session.ID())
 			SendErrorMessage(session, message.Cmd, err.Error(), false, true)
 		}
-
-		NotifyGroupList()
 	case CmdJoinGroup:
 		if player, ok := FindPlayer(session.ID()); ok {
 			decoder := json.NewDecoder(strings.NewReader(message.Msg))
@@ -72,6 +71,7 @@ func handleMsg(session sockjs.Session, msg string) {
 					ID string `json:"groupId"`
 					OK bool   `json:"ok"`
 				}{ID: player.GroupJoined.ID, OK: true}, true)
+				NotifyGroupList()
 			} else {
 				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
 			}
@@ -79,8 +79,6 @@ func handleMsg(session sockjs.Session, msg string) {
 			err := NewError("No user found with id " + session.ID())
 			SendErrorMessage(session, message.Cmd, err.Error(), false, true)
 		}
-
-		NotifyGroupList()
 	case CmdExitGroup:
 		if player, ok := FindPlayer(session.ID()); ok {
 			decoder := json.NewDecoder(strings.NewReader(message.Msg))
@@ -91,6 +89,7 @@ func handleMsg(session sockjs.Session, msg string) {
 				SendStructMessage(session, message.Cmd, struct {
 					OK bool `json:"ok"`
 				}{OK: true}, true)
+				NotifyGroupList()
 			} else {
 				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
 			}
@@ -98,18 +97,20 @@ func handleMsg(session sockjs.Session, msg string) {
 			err := NewError("No user found with id " + session.ID())
 			SendErrorMessage(session, message.Cmd, err.Error(), false, true)
 		}
-
-		NotifyGroupList()
 	case CmdRegister:
 		decoder := json.NewDecoder(strings.NewReader(message.Msg))
 		registerInfo := new(RegisterMessage)
 		decoder.Decode(registerInfo)
-		Register(session, registerInfo.ID, registerInfo.Name)
-		SendStructMessage(session, message.Cmd, struct {
-			ID string `json:"id"`
-			OK bool   `json:ok`
-		}{session.ID(), true}, true)
+		if err := Register(session, registerInfo.ID, registerInfo.Name); err == nil {
+			SendStructMessage(session, message.Cmd, struct {
+				ID   string `json:"id"`
+				Name string `json:"name"`
+				OK   bool   `json:"ok"`
+			}{session.ID(), registerInfo.Name, true}, true)
 
-		NotifyGroupList()
+			NotifyGroupList()
+		} else {
+			SendErrorMessage(session, message.Cmd, err.Error(), false, true)
+		}
 	}
 }
