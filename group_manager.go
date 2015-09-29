@@ -54,12 +54,16 @@ func (g *GameGroup) Exit(p *GamePlayer) error {
 			g.Players.Remove(e)
 			// If is host of a group
 			if player.GroupHosted != nil {
-				player.GroupHosted.Host = nil
+				g.Host = nil
 				player.GroupHosted = nil
 			}
 			// If group is empty
 			if g.Players.Len() == 0 {
 				delete(groups, g.ID)
+			} else {
+				if g.Host == nil {
+					g.Host = g.Players.Front().Value.(*GamePlayer)
+				}
 			}
 			return nil
 		}
