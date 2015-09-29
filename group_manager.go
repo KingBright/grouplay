@@ -50,19 +50,23 @@ func (g *GameGroup) Exit(p *GamePlayer) error {
 	for e := g.Players.Front(); e != nil; e = e.Next() {
 		player := e.Value.(*GamePlayer)
 		if player == p {
+			// Remove relation
 			player.GroupJoined = nil
 			g.Players.Remove(e)
 			// If is host of a group
 			if player.GroupHosted != nil {
-				g.Host = nil
+				player.GroupHosted.Host = nil
 				player.GroupHosted = nil
 			}
-			// If group is empty
-			if g.Players.Len() == 0 {
-				delete(groups, g.ID)
-			} else {
+			// Remove old mapping
+			delete(groups, g.ID)
+			if g.Players.Len() > 0 {
 				if g.Host == nil {
-					g.Host = g.Players.Front().Value.(*GamePlayer)
+					newHost := g.Players.Front().Value.(*GamePlayer)
+					g.Host = newHost
+					g.ID = newHost.ID
+					newHost.GroupHosted = g
+					groups[g.ID] = g
 				}
 			}
 			return nil

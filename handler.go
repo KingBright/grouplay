@@ -24,6 +24,10 @@ func quoridorHandler(session sockjs.Session) {
 	}
 }
 
+func RegisterController() {
+
+}
+
 func handleMsg(session sockjs.Session, msg string) {
 	fmt.Println("Message :", msg)
 	decoder := json.NewDecoder(strings.NewReader(msg))
