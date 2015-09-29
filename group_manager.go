@@ -69,8 +69,8 @@ func (g *GameGroup) Exit(p *GamePlayer) error {
 
 func (g *GameGroup) Exist(p *GamePlayer) bool {
 	for e := g.Players.Front(); e != nil; e = e.Next() {
-		player := e.Value.(GamePlayer)
-		if &player == p {
+		player := e.Value.(*GamePlayer)
+		if player == p {
 			return true
 		}
 	}
@@ -146,14 +146,14 @@ func NotifyGroupList() {
 
 func (g *GameGroup) NotifyPlayer(msg string) {
 	for e := g.Players.Front(); e != nil; e = e.Next() {
-		p := e.Value.(GamePlayer)
+		p := e.Value.(*GamePlayer)
 		SendJsonMessage(*p.Session, msg)
 	}
 }
 
 func (g *GameGroup) NotifySpectator(msg string) {
 	for e := g.Spectators.Front(); e != nil; e = e.Next() {
-		p := e.Value.(GamePlayer)
+		p := e.Value.(*GamePlayer)
 		SendJsonMessage(*p.Session, msg)
 	}
 }

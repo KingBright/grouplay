@@ -65,10 +65,9 @@ func handleMsg(session sockjs.Session, msg string) {
 
 			if ok, err := player.JoinGroup(joinInfo.Id); ok {
 				SendStructMessage(session, message.Cmd, struct {
-					ID     string `json:"groupId"`
-					Hoster bool   `json:isHoster`
-					OK     bool   `json:"ok"`
-				}{ID: player.GroupHosted.ID, Hoster: false, OK: true}, true)
+					ID string `json:"groupId"`
+					OK bool   `json:"ok"`
+				}{ID: player.GroupJoined.ID, OK: true}, true)
 			} else {
 				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
 			}
@@ -105,7 +104,7 @@ func handleMsg(session sockjs.Session, msg string) {
 		SendStructMessage(session, message.Cmd, struct {
 			ID string `json:"id"`
 			OK bool   `json:ok`
-		}{ID: session.ID(), true}, true)
+		}{session.ID(), true}, true)
 
 		NotifyGroupList()
 	}
