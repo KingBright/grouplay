@@ -117,7 +117,3 @@ func (p *GamePlayer) ExitGroup(id string) (bool, error) {
 	}
 	return false, NewError("You haven't joined any group")
 }
-
-func (p *GamePlayer) StartGame() {
-
-}

@@ -32,10 +32,14 @@ type GroupInfo struct {
 	Players        int    `json:"current"`
 	Spectators     int    `json:"spectators"`
 	AllowSpectator bool   `json:"allowSpectator"`
+	Playing        bool   `json:"playing"`
 }
 
 // Join : Let a player join into a group if the group doesn't reach the max size.
 func (g *GameGroup) Join(p *GamePlayer) error {
+	if g.Playing {
+		return NewError("The game has been already started, try spectating!")
+	}
 	if length := g.Players.Len(); length == g.MaxPlayer {
 		return NewError("Player number has reached the max size.")
 	}
@@ -47,6 +51,9 @@ func (g *GameGroup) Join(p *GamePlayer) error {
 }
 
 func (g *GameGroup) Exit(p *GamePlayer) error {
+	if g.Playing {
+		return NewError("The game has been already started, can't exit!")
+	}
 	for e := g.Players.Front(); e != nil; e = e.Next() {
 		player := e.Value.(*GamePlayer)
 		if player == p {
@@ -113,16 +120,17 @@ func CreateGroup(player *GamePlayer, max int, allowSpectate bool) (group *GameGr
 func BuildGroupList() GroupListMessage {
 	waiting := make([]GroupInfo, 0)
 	playing := make([]GroupInfo, 0)
-	for _, v := range groups {
+	for _, group := range groups {
 		info := GroupInfo{
-			Host:           v.Host.Name,
-			ID:             v.ID,
-			Limit:          v.MaxPlayer,
-			Players:        v.Players.Len(),
-			Spectators:     v.Spectators.Len(),
-			AllowSpectator: v.AllowSpectator,
+			Host:           group.Host.Name,
+			ID:             group.ID,
+			Limit:          group.MaxPlayer,
+			Players:        group.Players.Len(),
+			Spectators:     group.Spectators.Len(),
+			AllowSpectator: group.AllowSpectator,
+			Playing:        group.Playing,
 		}
-		if v.Playing {
+		if group.Playing {
 			fmt.Println("Add playing group")
 			playing = append(playing, info)
 		} else {
@@ -144,6 +152,7 @@ func NotifyGroupList() {
 				Players:        p.GroupJoined.Players.Len(),
 				Spectators:     p.GroupJoined.Spectators.Len(),
 				AllowSpectator: p.GroupJoined.AllowSpectator,
+				Playing:        p.GroupJoined.Playing,
 			}
 		} else {
 			groupList.Joined = nil
@@ -152,16 +161,16 @@ func NotifyGroupList() {
 	}
 }
 
-func (g *GameGroup) NotifyPlayer(msg string) {
+func (g *GameGroup) NotifyPlayer(cmd, msg string) {
 	for e := g.Players.Front(); e != nil; e = e.Next() {
 		p := e.Value.(*GamePlayer)
-		SendJsonMessage(*p.Session, msg)
+		Send(*p.Session, cmd, msg, true)
 	}
 }
 
-func (g *GameGroup) NotifySpectator(msg string) {
+func (g *GameGroup) NotifySpectator(cmd, msg string) {
 	for e := g.Spectators.Front(); e != nil; e = e.Next() {
 		p := e.Value.(*GamePlayer)
-		SendJsonMessage(*p.Session, msg)
+		Send(*p.Session, cmd, msg, true)
 	}
 }

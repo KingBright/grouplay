@@ -66,7 +66,7 @@ func handleMsg(session sockjs.Session, msg string) {
 			joinInfo := new(JoinGroupMessage)
 			decoder.Decode(joinInfo)
 
-			if ok, err := player.JoinGroup(joinInfo.Id); ok {
+			if ok, err := player.JoinGroup(joinInfo.GroupId); ok {
 				SendStructMessage(session, message.Cmd, struct {
 					ID string `json:"groupId"`
 					OK bool   `json:"ok"`
@@ -85,7 +85,7 @@ func handleMsg(session sockjs.Session, msg string) {
 			exitInfo := new(ExitGroupMessage)
 			decoder.Decode(exitInfo)
 
-			if ok, err := player.ExitGroup(exitInfo.Id); ok {
+			if ok, err := player.ExitGroup(exitInfo.GroupId); ok {
 				SendStructMessage(session, message.Cmd, struct {
 					OK bool `json:"ok"`
 				}{OK: true}, true)
@@ -110,6 +110,54 @@ func handleMsg(session sockjs.Session, msg string) {
 
 			NotifyGroupList()
 		} else {
+			SendErrorMessage(session, message.Cmd, err.Error(), false, true)
+		}
+
+		CheckPlayingGame(session.ID())
+	case CmdStartGame:
+		if player, ok := FindPlayer(session.ID()); ok {
+			decoder := json.NewDecoder(strings.NewReader(message.Msg))
+			startGameMessage := new(StartGameMessage)
+			decoder.Decode(startGameMessage)
+
+			group := player.GroupHosted
+			if group == nil {
+				err := NewError("You haven't hosted a group.")
+				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
+			}
+			if err := StartGame(group, startGameMessage.GroupId); err == nil {
+
+				//Notify first player to action
+				SendStructMessage(session, message.Cmd, struct {
+					OK bool `json:"ok"`
+				}{true}, true)
+			} else {
+				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
+			}
+		} else {
+			err := NewError("No user found with id " + session.ID())
+			SendErrorMessage(session, message.Cmd, err.Error(), false, true)
+		}
+	case CmdUpdateData:
+		if player, ok := FindPlayer(session.ID()); ok {
+			decoder := json.NewDecoder(strings.NewReader(message.Msg))
+			dataUpdateMessage := new(DataUpdateMessage)
+			decoder.Decode(dataUpdateMessage)
+
+			if player.GroupJoined != nil {
+				if err := UpdateData(player.GroupJoined, dataUpdateMessage.Action, dataUpdateMessage.Data); err == nil {
+					SendStructMessage(session, message.Cmd, struct {
+						OK bool `json:"ok"`
+					}{true}, true)
+				} else {
+					SendErrorMessage(session, message.Cmd, err.Error(), false, true)
+				}
+			} else {
+				err := NewError("You are not in a group")
+				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
+			}
+		} else {
+			err := NewError("No user found with id " + session.ID())
 			SendErrorMessage(session, message.Cmd, err.Error(), false, true)
 		}
 	}

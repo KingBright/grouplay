@@ -13,6 +13,8 @@ const (
 	CmdExitGroup   = "exit_group"
 	CmdJoinGroup   = "join_group"
 	CmdGroupUpdate = "group_update"
+	CmdStartGame   = "start_game"
+	CmdUpdateData  = "update_data"
 )
 
 // Message format for transaction between server & client.
@@ -33,11 +35,11 @@ type CreateGroupMesssage struct {
 }
 
 type JoinGroupMessage struct {
-	Id string `json:"groupId"`
+	GroupId string `json:"groupId"`
 }
 
 type ExitGroupMessage struct {
-	Id string `json:"groupId"`
+	GroupId string `json:"groupId"`
 }
 
 type ErrorMessage struct {
@@ -49,6 +51,15 @@ type GroupListMessage struct {
 	Joined  *GroupInfo  `json:"joined"`
 	Waiting []GroupInfo `json:"waiting"`
 	Playing []GroupInfo `json:"playing"`
+}
+
+type StartGameMessage struct {
+	GroupId string `json:"groupId"`
+}
+
+type DataUpdateMessage struct {
+	Action string `json:"action"`
+	Data   string `json:"data"`
 }
 
 func (m Message) String() string {
