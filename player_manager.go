@@ -20,6 +20,7 @@ type GamePlayer struct {
 	GroupHosted     *GameGroup
 	GroupJoined     *GameGroup
 	GroupSpectating *GameGroup
+	InGame          bool
 }
 
 func (p *GamePlayer) Update(session sockjs.Session, id string, name string) {
@@ -44,7 +45,7 @@ func Register(session sockjs.Session, oldId string, name string) error {
 			return NewError("The name is already registered!")
 		}
 		id := session.ID()
-		players[id] = &GamePlayer{id, name, 0, &session, nil, nil, nil}
+		players[id] = &GamePlayer{id, name, 0, &session, nil, nil, nil, false}
 		fmt.Println("Register as new")
 		return nil
 	}

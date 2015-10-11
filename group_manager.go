@@ -34,6 +34,11 @@ type GroupInfo struct {
 	AllowSpectator bool   `json:"allowSpectator"`
 	Playing        bool   `json:"playing"`
 }
+type MyInfo struct {
+	Session string `json:"session"`
+	InGame  bool   `json:"ingame"`
+	Index   int    `json:"index"`
+}
 
 // Join : Let a player join into a group if the group doesn't reach the max size.
 func (g *GameGroup) Join(p *GamePlayer) error {
@@ -138,12 +143,14 @@ func BuildGroupList() GroupListMessage {
 			waiting = append(waiting, info)
 		}
 	}
-	return GroupListMessage{nil, waiting, playing}
+	return GroupListMessage{nil, nil, waiting, playing}
 }
 
 func NotifyGroupList() {
 	groupList := BuildGroupList()
+	var index = 0
 	for _, p := range players {
+		index++
 		if p.GroupJoined != nil {
 			groupList.Joined = &GroupInfo{
 				Host:           p.GroupJoined.Host.Name,
@@ -157,6 +164,8 @@ func NotifyGroupList() {
 		} else {
 			groupList.Joined = nil
 		}
+		// Create my info
+		groupList.Info = &MyInfo{p.ID, p.InGame, index}
 		SendStructMessage(*p.Session, CmdGroupUpdate, groupList, true)
 	}
 }

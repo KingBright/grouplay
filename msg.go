@@ -8,13 +8,17 @@ import (
 
 // Communicate protocal.
 const (
-	CmdRegister    = "register"
-	CmdCreateGroup = "create_group"
-	CmdExitGroup   = "exit_group"
-	CmdJoinGroup   = "join_group"
-	CmdGroupUpdate = "group_update"
-	CmdStartGame   = "start_game"
-	CmdUpdateData  = "update_data"
+	CmdRegister     = "register"
+	CmdCreateGroup  = "create_group"
+	CmdExitGroup    = "exit_group"
+	CmdJoinGroup    = "join_group"
+	CmdGroupUpdate  = "group_update"
+	CmdUpdateData   = "update_data"
+	CmdStartGame    = "start_game"
+	CmdExitGame     = "exit_game"
+	CmdGetData      = "get_data"
+	CmdPlaying      = "playing"
+	CmdPlayerAction = "player_action"
 )
 
 // Message format for transaction between server & client.
@@ -48,6 +52,7 @@ type ErrorMessage struct {
 }
 
 type GroupListMessage struct {
+	Info    *MyInfo     `json:"myInfo"`
 	Joined  *GroupInfo  `json:"joined"`
 	Waiting []GroupInfo `json:"waiting"`
 	Playing []GroupInfo `json:"playing"`

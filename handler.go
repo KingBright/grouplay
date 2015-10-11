@@ -4,14 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"gopkg.in/igm/sockjs-go.v2/sockjs"
-	"log"
 	"net/http"
 	"strings"
 )
 
-func StartServe() {
-	handler := sockjs.NewHandler("/quoridor", sockjs.DefaultOptions, quoridorHandler)
-	log.Fatal(http.ListenAndServe(":8081", handler))
+func NewHandler(prefix string) http.Handler {
+	return sockjs.NewHandler(prefix, sockjs.DefaultOptions, quoridorHandler)
 }
 
 func quoridorHandler(session sockjs.Session) {
@@ -22,10 +20,6 @@ func quoridorHandler(session sockjs.Session) {
 		}
 		break
 	}
-}
-
-func RegisterController() {
-
 }
 
 func handleMsg(session sockjs.Session, msg string) {
@@ -112,8 +106,7 @@ func handleMsg(session sockjs.Session, msg string) {
 		} else {
 			SendErrorMessage(session, message.Cmd, err.Error(), false, true)
 		}
-
-		CheckPlayingGame(session.ID())
+		CheckPlayingGame(registerInfo.ID, session.ID())
 	case CmdStartGame:
 		if player, ok := FindPlayer(session.ID()); ok {
 			decoder := json.NewDecoder(strings.NewReader(message.Msg))
@@ -126,11 +119,10 @@ func handleMsg(session sockjs.Session, msg string) {
 				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
 			}
 			if err := StartGame(group, startGameMessage.GroupId); err == nil {
-
-				//Notify first player to action
-				SendStructMessage(session, message.Cmd, struct {
+				//Notify all player to action
+				group.NotifyPlayer(message.Cmd, ToJson(struct {
 					OK bool `json:"ok"`
-				}{true}, true)
+				}{true}))
 			} else {
 				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
 			}
@@ -138,14 +130,46 @@ func handleMsg(session sockjs.Session, msg string) {
 			err := NewError("No user found with id " + session.ID())
 			SendErrorMessage(session, message.Cmd, err.Error(), false, true)
 		}
-	case CmdUpdateData:
+	case CmdGetData:
+		if player, ok := FindPlayer(session.ID()); ok {
+			if err := GetDataForPlayer(player); err != nil {
+				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
+			}
+		} else {
+			err := NewError("No user found with id " + session.ID())
+			SendErrorMessage(session, message.Cmd, err.Error(), false, true)
+		}
+	case CmdExitGame:
+		if player, ok := FindPlayer(session.ID()); ok {
+			group := player.GroupJoined
+			if group == nil {
+				err := NewError("You haven't jonied a group.")
+				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
+			} else if group.Playing {
+				err := NewError("The game is playing, you can't leave.")
+				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
+			} else {
+				if err := ExitGame(player); err == nil {
+					//Notify first player to action
+					SendStructMessage(session, message.Cmd, struct {
+						OK bool `json:"ok"`
+					}{true}, true)
+				} else {
+					SendErrorMessage(session, message.Cmd, err.Error(), false, true)
+				}
+			}
+		} else {
+			err := NewError("No user found with id " + session.ID())
+			SendErrorMessage(session, message.Cmd, err.Error(), false, true)
+		}
+	case CmdPlayerAction:
 		if player, ok := FindPlayer(session.ID()); ok {
 			decoder := json.NewDecoder(strings.NewReader(message.Msg))
 			dataUpdateMessage := new(DataUpdateMessage)
 			decoder.Decode(dataUpdateMessage)
 
 			if player.GroupJoined != nil {
-				if err := UpdateData(player.GroupJoined, dataUpdateMessage.Action, dataUpdateMessage.Data); err == nil {
+				if err := UpdateData(player, player.GroupJoined, dataUpdateMessage.Action, dataUpdateMessage.Data); err == nil {
 					SendStructMessage(session, message.Cmd, struct {
 						OK bool `json:"ok"`
 					}{true}, true)
