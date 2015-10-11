@@ -19,6 +19,8 @@ const (
 	CmdGetData      = "get_data"
 	CmdPlaying      = "playing"
 	CmdPlayerAction = "player_action"
+	CmdQuitGame     = "quit_game"
+	CmdGameFinish   = "game_finish"
 )
 
 // Message format for transaction between server & client.

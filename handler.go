@@ -46,7 +46,7 @@ func handleMsg(session sockjs.Session, msg string) {
 					Hoster bool   `json:"isHoster"`
 					OK     bool   `json:"ok"`
 				}{ID: player.GroupHosted.ID, Hoster: true, OK: true}, true)
-				NotifyGroupList()
+				NotifyGroupListToAll()
 			} else {
 				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
 			}
@@ -65,7 +65,7 @@ func handleMsg(session sockjs.Session, msg string) {
 					ID string `json:"groupId"`
 					OK bool   `json:"ok"`
 				}{ID: player.GroupJoined.ID, OK: true}, true)
-				NotifyGroupList()
+				NotifyGroupListToAll()
 			} else {
 				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
 			}
@@ -83,7 +83,7 @@ func handleMsg(session sockjs.Session, msg string) {
 				SendStructMessage(session, message.Cmd, struct {
 					OK bool `json:"ok"`
 				}{OK: true}, true)
-				NotifyGroupList()
+				NotifyGroupListToAll()
 			} else {
 				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
 			}
@@ -101,8 +101,7 @@ func handleMsg(session sockjs.Session, msg string) {
 				Name string `json:"name"`
 				OK   bool   `json:"ok"`
 			}{session.ID(), registerInfo.Name, true}, true)
-
-			NotifyGroupList()
+			NotifyGroupListToAll()
 		} else {
 			SendErrorMessage(session, message.Cmd, err.Error(), false, true)
 		}
@@ -120,9 +119,9 @@ func handleMsg(session sockjs.Session, msg string) {
 			}
 			if err := StartGame(group, startGameMessage.GroupId); err == nil {
 				//Notify all player to action
-				group.NotifyPlayer(message.Cmd, ToJson(struct {
+				group.NotifyPlayerStruct(message.Cmd, struct {
 					OK bool `json:"ok"`
-				}{true}))
+				}{true})
 			} else {
 				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
 			}
@@ -183,6 +182,15 @@ func handleMsg(session sockjs.Session, msg string) {
 		} else {
 			err := NewError("No user found with id " + session.ID())
 			SendErrorMessage(session, message.Cmd, err.Error(), false, true)
+		}
+	case CmdQuitGame:
+		if player, ok := FindPlayer(session.ID()); ok {
+			if player.GroupJoined != nil {
+				if player.InGame {
+					player.InGame = false
+				}
+				NotifyGroupListToAll()
+			}
 		}
 	}
 }

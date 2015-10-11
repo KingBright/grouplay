@@ -57,7 +57,7 @@ func createIndex(g *GameGroup) {
 func ExitGame(player *GamePlayer) error {
 	if player.InGame {
 		player.InGame = false
-		NotifyGroupList()
+		NotifyGroupListToAll()
 		return nil
 	} else {
 		return NewError("Player is not in game.")
@@ -71,6 +71,7 @@ func UpdateData(player *GamePlayer, group *GameGroup, action, data string) error
 				notifyDataUpdate(group)
 				if controller.IsFinished() {
 					group.Playing = false
+					group.NotifyAllString(CmdGameFinish, "")
 				}
 				return nil
 			} else {
@@ -102,6 +103,10 @@ func CheckPlayingGame(oldId, newId string) error {
 			return NewError("You are not in a group.")
 		}
 		if !player.GroupJoined.Playing {
+			// If refresh by user, set the InGame status to false
+			if player.InGame {
+				player.InGame = false
+			}
 			return NewError("Game is not started!")
 		}
 		controller := controllers[player.GroupJoined]
