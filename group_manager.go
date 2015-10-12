@@ -145,12 +145,28 @@ func BuildGroupList() GroupListMessage {
 	}
 	return GroupListMessage{nil, nil, waiting, playing}
 }
-
+func NotifyGroupListToOne(p *GamePlayer) {
+	groupList := BuildGroupList()
+	if p.GroupJoined != nil {
+		groupList.Joined = &GroupInfo{
+			Host:           p.GroupJoined.Host.Name,
+			ID:             p.GroupJoined.ID,
+			Limit:          p.GroupJoined.MaxPlayer,
+			Players:        p.GroupJoined.Players.Len(),
+			Spectators:     p.GroupJoined.Spectators.Len(),
+			AllowSpectator: p.GroupJoined.AllowSpectator,
+			Playing:        p.GroupJoined.Playing,
+		}
+	} else {
+		groupList.Joined = nil
+	}
+	// Create my info
+	groupList.Info = &MyInfo{p.ID, p.InGame, 0}
+	SendStructMessage(*p.Session, CmdGroupUpdate, groupList, true)
+}
 func NotifyGroupListToAll() {
 	groupList := BuildGroupList()
-	var index = 0
 	for _, p := range players {
-		index++
 		if p.GroupJoined != nil {
 			groupList.Joined = &GroupInfo{
 				Host:           p.GroupJoined.Host.Name,
@@ -165,43 +181,42 @@ func NotifyGroupListToAll() {
 			groupList.Joined = nil
 		}
 		// Create my info
-		groupList.Info = &MyInfo{p.ID, p.InGame, index}
+		groupList.Info = &MyInfo{p.ID, p.InGame, 0}
 		SendStructMessage(*p.Session, CmdGroupUpdate, groupList, true)
 	}
 }
 
-func (g *GameGroup) NotifyPlayerString(cmd, msg string) {
+func (g *GameGroup) NotifyPlayerExcept(cmd string, msg interface{}, player *GamePlayer) {
 	for e := g.Players.Front(); e != nil; e = e.Next() {
 		p := e.Value.(*GamePlayer)
-		Send(*p.Session, cmd, msg, true)
+		if p != player {
+			SendStructMessage(*p.Session, cmd, msg, true)
+		}
 	}
 }
 
-func (g *GameGroup) NotifySpectatorString(cmd, msg string) {
+func (g *GameGroup) NotifyPlayer(cmd string, msg interface{}) {
+	g.NotifyPlayerExcept(cmd, msg, nil)
+}
+
+func (g *GameGroup) NotifySpectatorExcept(cmd string, msg interface{}, player *GamePlayer) {
 	for e := g.Spectators.Front(); e != nil; e = e.Next() {
 		p := e.Value.(*GamePlayer)
-		Send(*p.Session, cmd, msg, true)
-	}
-}
-func (g *GameGroup) NotifyPlayerStruct(cmd string, msg interface{}) {
-	for e := g.Players.Front(); e != nil; e = e.Next() {
-		p := e.Value.(*GamePlayer)
-		SendStructMessage(*p.Session, cmd, msg, true)
+		if p != player {
+			SendStructMessage(*p.Session, cmd, msg, true)
+		}
 	}
 }
 
-func (g *GameGroup) NotifySpectatorStruct(cmd string, msg interface{}) {
-	for e := g.Spectators.Front(); e != nil; e = e.Next() {
-		p := e.Value.(*GamePlayer)
-		SendStructMessage(*p.Session, cmd, msg, true)
-	}
+func (g *GameGroup) NotifySpectator(cmd string, msg interface{}) {
+	g.NotifySpectatorExcept(cmd, msg, nil)
 }
 
-func (g *GameGroup) NotifyAllStruct(cmd string, msg interface{}) {
-	g.NotifyPlayerStruct(cmd, msg)
-	g.NotifySpectatorStruct(cmd, msg)
+func (g *GameGroup) NotifyAll(cmd string, msg interface{}) {
+	g.NotifyPlayerExcept(cmd, msg, nil)
+	g.NotifySpectatorExcept(cmd, msg, nil)
 }
-func (g *GameGroup) NotifyAllString(cmd, msg string) {
-	g.NotifyPlayerString(cmd, msg)
-	g.NotifySpectatorString(cmd, msg)
+func (g *GameGroup) NotifyAllExcept(cmd string, msg interface{}, player *GamePlayer) {
+	g.NotifyPlayerExcept(cmd, msg, player)
+	g.NotifySpectatorExcept(cmd, msg, player)
 }

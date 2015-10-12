@@ -119,7 +119,7 @@ func handleMsg(session sockjs.Session, msg string) {
 			}
 			if err := StartGame(group, startGameMessage.GroupId); err == nil {
 				//Notify all player to action
-				group.NotifyPlayerStruct(message.Cmd, struct {
+				group.NotifyPlayer(message.Cmd, struct {
 					OK bool `json:"ok"`
 				}{true})
 			} else {
@@ -185,11 +185,16 @@ func handleMsg(session sockjs.Session, msg string) {
 		}
 	case CmdQuitGame:
 		if player, ok := FindPlayer(session.ID()); ok {
-			if player.GroupJoined != nil && !player.GroupJoined.Playing {
+			if player.GroupHosted != nil {
+				if player.GroupHosted.Playing {
+					player.GroupHosted.Playing = false
+					player.InGame = false
+					player.GroupHosted.NotifyAllExcept(CmdHostStop, "", player)
+				}
+			} else {
 				player.InGame = false
-				fmt.Println("set InGame to false for", player.Name)
-				NotifyGroupListToAll()
 			}
+			NotifyGroupListToOne(player)
 		}
 	}
 }

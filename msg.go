@@ -21,6 +21,7 @@ const (
 	CmdPlayerAction = "player_action"
 	CmdQuitGame     = "quit_game"
 	CmdGameFinish   = "game_finish"
+	CmdHostStop     = "host_stop"
 )
 
 // Message format for transaction between server & client.
