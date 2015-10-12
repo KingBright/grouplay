@@ -137,6 +137,7 @@ func BuildGroupList() GroupListMessage {
 			Spectators:     group.Spectators.Len(),
 			AllowSpectator: group.AllowSpectator,
 			Playing:        group.Playing,
+			Game:           group.Game,
 		}
 		if group.Playing {
 			fmt.Println("Add playing group")
@@ -159,6 +160,7 @@ func NotifyGroupListToOne(p *GamePlayer) {
 			Spectators:     p.GroupJoined.Spectators.Len(),
 			AllowSpectator: p.GroupJoined.AllowSpectator,
 			Playing:        p.GroupJoined.Playing,
+			Game:           p.GroupJoined.Game,
 		}
 	} else {
 		groupList.Joined = nil
