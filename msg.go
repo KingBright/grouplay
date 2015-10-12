@@ -22,6 +22,7 @@ const (
 	CmdQuitGame     = "quit_game"
 	CmdGameFinish   = "game_finish"
 	CmdHostStop     = "host_stop"
+	CmdGetGameList  = "get_game_list"
 )
 
 // Message format for transaction between server & client.
@@ -37,8 +38,9 @@ type RegisterMessage struct {
 }
 
 type CreateGroupMesssage struct {
-	Max            int  `json:"max"`
-	AllowSpectator bool `json:"allowSpectator"`
+	Game           string `json:"game"`
+	Max            int    `json:"max"`
+	AllowSpectator bool   `json:"allowSpectator"`
 }
 
 type JoinGroupMessage struct {

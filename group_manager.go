@@ -23,6 +23,7 @@ type GameGroup struct {
 	Spectators     *list.List
 	AllowSpectator bool
 	Playing        bool
+	Game           *Game
 }
 
 type GroupInfo struct {
@@ -33,6 +34,7 @@ type GroupInfo struct {
 	Spectators     int    `json:"spectators"`
 	AllowSpectator bool   `json:"allowSpectator"`
 	Playing        bool   `json:"playing"`
+	Game           *Game  `json:"game"`
 }
 type MyInfo struct {
 	Session string `json:"session"`
@@ -107,7 +109,7 @@ func FindGroup(id string) (group *GameGroup, ok bool) {
 }
 
 // CreateGroup : Create a group and name it with the player's name
-func CreateGroup(player *GamePlayer, max int, allowSpectate bool) (group *GameGroup) {
+func CreateGroup(game *Game, player *GamePlayer, max int, allowSpectate bool) (group *GameGroup) {
 	group = &GameGroup{
 		ID:             player.ID,
 		Host:           player,
@@ -116,6 +118,7 @@ func CreateGroup(player *GamePlayer, max int, allowSpectate bool) (group *GameGr
 		Spectators:     list.New(),
 		AllowSpectator: allowSpectate,
 		Playing:        false,
+		Game:           game,
 	}
 	// Add to group
 	groups[group.ID] = group
@@ -176,6 +179,7 @@ func NotifyGroupListToAll() {
 				Spectators:     p.GroupJoined.Spectators.Len(),
 				AllowSpectator: p.GroupJoined.AllowSpectator,
 				Playing:        p.GroupJoined.Playing,
+				Game:           p.GroupJoined.Game,
 			}
 		} else {
 			groupList.Joined = nil

@@ -1,14 +1,9 @@
 package grouplay
 
 var controllers map[*GameGroup]GameController
-var creator func() GameController
 
 func init() {
 	controllers = make(map[*GameGroup]GameController)
-}
-
-func RegisterCreator(c func() GameController) {
-	creator = c
 }
 
 func StartGame(group *GameGroup, groupId string) error {
@@ -18,6 +13,8 @@ func StartGame(group *GameGroup, groupId string) error {
 	if group.Playing {
 		return NewError("Game is already started.")
 	}
+
+	creator := GetControllerCreator(group.Game.Name)
 
 	if creator != nil {
 		if group.Players != nil && group.Players.Len() >= 2 {

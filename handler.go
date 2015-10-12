@@ -40,7 +40,8 @@ func handleMsg(session sockjs.Session, msg string) {
 			createInfo := new(CreateGroupMesssage)
 			decoder.Decode(createInfo)
 
-			if ok, err := player.CreateGroup(createInfo.Max, createInfo.AllowSpectator); ok {
+			game := GetGame(createInfo.Game)
+			if ok, err := player.CreateGroup(game, createInfo.Max, createInfo.AllowSpectator); ok {
 				SendStructMessage(session, message.Cmd, struct {
 					ID     string `json:"groupId"`
 					Hoster bool   `json:"isHoster"`
@@ -196,5 +197,7 @@ func handleMsg(session sockjs.Session, msg string) {
 			}
 			NotifyGroupListToOne(player)
 		}
+	case CmdGetGameList:
+		SendStructMessage(session, message.Cmd, GetGameList(), true)
 	}
 }

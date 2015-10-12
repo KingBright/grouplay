@@ -69,7 +69,7 @@ func FindPlayer(id string) (player *GamePlayer, ok bool) {
 	return player, ok
 }
 
-func (p *GamePlayer) CreateGroup(max int, allowSpectate bool) (bool, error) {
+func (p *GamePlayer) CreateGroup(game *Game, max int, allowSpectate bool) (bool, error) {
 	if p.GroupHosted != nil {
 		fmt.Println("You already hosted a group")
 		return false, NewError("You already hosted a group.")
@@ -80,7 +80,7 @@ func (p *GamePlayer) CreateGroup(max int, allowSpectate bool) (bool, error) {
 		return false, NewError("You already joined a group.")
 	}
 	fmt.Println("group joined", p.GroupJoined)
-	group := CreateGroup(p, max, allowSpectate)
+	group := CreateGroup(game, p, max, allowSpectate)
 	p.GroupHosted = group
 	fmt.Println("A group created by player", p.ID)
 	if err := group.Join(p); err == nil {
