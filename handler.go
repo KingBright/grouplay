@@ -185,10 +185,9 @@ func handleMsg(session sockjs.Session, msg string) {
 		}
 	case CmdQuitGame:
 		if player, ok := FindPlayer(session.ID()); ok {
-			if player.GroupJoined != nil {
-				if player.InGame {
-					player.InGame = false
-				}
+			if player.GroupJoined != nil && !player.GroupJoined.Playing {
+				player.InGame = false
+				fmt.Println("set InGame to false for", player.Name)
 				NotifyGroupListToAll()
 			}
 		}

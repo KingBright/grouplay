@@ -24,7 +24,7 @@ func StartGame(group *GameGroup, groupId string) error {
 			for e := group.Players.Front(); e != nil; e = e.Next() {
 				p := e.Value.(*GamePlayer)
 				if p.InGame {
-					return NewError("Someone is still in game.")
+					return NewError("Someone is still in game." + p.Name)
 				}
 			}
 			for e := group.Players.Front(); e != nil; e = e.Next() {
