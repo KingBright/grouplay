@@ -139,29 +139,6 @@ func handleMsg(session sockjs.Session, msg string) {
 			err := NewError("No user found with id " + session.ID())
 			SendErrorMessage(session, message.Cmd, err.Error(), false, true)
 		}
-	case CmdExitGame:
-		if player, ok := FindPlayer(session.ID()); ok {
-			group := player.GroupJoined
-			if group == nil {
-				err := NewError("You haven't jonied a group.")
-				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
-			} else if group.Playing {
-				err := NewError("The game is playing, you can't leave.")
-				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
-			} else {
-				if err := ExitGame(player); err == nil {
-					//Notify first player to action
-					SendStructMessage(session, message.Cmd, struct {
-						OK bool `json:"ok"`
-					}{true}, true)
-				} else {
-					SendErrorMessage(session, message.Cmd, err.Error(), false, true)
-				}
-			}
-		} else {
-			err := NewError("No user found with id " + session.ID())
-			SendErrorMessage(session, message.Cmd, err.Error(), false, true)
-		}
 	case CmdPlayerAction:
 		if player, ok := FindPlayer(session.ID()); ok {
 			decoder := json.NewDecoder(strings.NewReader(message.Msg))
@@ -186,14 +163,20 @@ func handleMsg(session sockjs.Session, msg string) {
 		}
 	case CmdQuitGame:
 		if player, ok := FindPlayer(session.ID()); ok {
+			NotifyGroupListToOne(player)
+		}
+	case CmdStopGame:
+		if player, ok := FindPlayer(session.ID()); ok {
 			if player.GroupHosted != nil {
 				if player.GroupHosted.Playing {
 					player.GroupHosted.Playing = false
 					player.InGame = false
+					for e := player.GroupHosted.Players.Front(); e != nil; e = e.Next() {
+						p := e.Value.(*GamePlayer)
+						p.InGame = false
+					}
 					player.GroupHosted.NotifyAllExcept(CmdHostStop, "", player)
 				}
-			} else {
-				player.InGame = false
 			}
 			NotifyGroupListToOne(player)
 		}

@@ -68,7 +68,7 @@ func UpdateData(player *GamePlayer, group *GameGroup, action, data string) error
 				notifyDataUpdate(group)
 				if controller.IsFinished() {
 					group.Playing = false
-					group.NotifyAll(CmdGameFinish, "")
+					group.NotifyAll(CmdGameFinished, "")
 				}
 				return nil
 			} else {
