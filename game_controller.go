@@ -68,6 +68,10 @@ func UpdateData(player *GamePlayer, group *GameGroup, action, data string) error
 				notifyDataUpdate(group)
 				if controller.IsFinished() {
 					group.Playing = false
+					for e := player.GroupHosted.Players.Front(); e != nil; e = e.Next() {
+						p := e.Value.(*GamePlayer)
+						p.InGame = false
+					}
 					group.NotifyAll(CmdGameFinished, "")
 				}
 				return nil
