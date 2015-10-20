@@ -17,15 +17,13 @@ func StartGame(group *GameGroup, groupId string) error {
 	creator := GetControllerCreator(group.Game.Name)
 
 	if creator != nil {
-		if group.Players != nil && group.Players.Len() >= 2 {
-			for e := group.Players.Front(); e != nil; e = e.Next() {
-				p := e.Value.(*GamePlayer)
+		if group.Players != nil && len(group.Players) >= 2 {
+			for _, p := range group.Players {
 				if p.InGame {
 					return NewError("Someone is still in game." + p.Name)
 				}
 			}
-			for e := group.Players.Front(); e != nil; e = e.Next() {
-				p := e.Value.(*GamePlayer)
+			for _, p := range group.Players {
 				p.InGame = true
 			}
 			group.Playing = true
@@ -44,8 +42,7 @@ func StartGame(group *GameGroup, groupId string) error {
 
 func createIndex(g *GameGroup) {
 	index := 0
-	for e := g.Players.Front(); e != nil; e = e.Next() {
-		p := e.Value.(*GamePlayer)
+	for _, p := range g.Players {
 		p.Index = index
 		index++
 	}
@@ -68,8 +65,7 @@ func UpdateData(player *GamePlayer, group *GameGroup, action, data string) error
 				notifyDataUpdate(group)
 				if controller.IsFinished() {
 					group.Playing = false
-					for e := player.GroupHosted.Players.Front(); e != nil; e = e.Next() {
-						p := e.Value.(*GamePlayer)
+					for _, p := range player.GroupHosted.Players {
 						p.InGame = false
 					}
 					group.NotifyAll(CmdGameFinished, "")
@@ -128,12 +124,10 @@ func notifyPlayer(p *GamePlayer, cmd, data string) {
 
 func notifyDataUpdate(g *GameGroup) {
 	if controller, ok := controllers[g]; ok {
-		for e := g.Players.Front(); e != nil; e = e.Next() {
-			p := e.Value.(*GamePlayer)
+		for _, p := range g.Players {
 			notifyPlayer(p, CmdUpdateData, controller.GetData(p, g))
 		}
-		for e := g.Spectators.Front(); e != nil; e = e.Next() {
-			p := e.Value.(*GamePlayer)
+		for _, p := range g.Spectators {
 			notifyPlayer(p, CmdUpdateData, controller.GetData(nil, g))
 		}
 	}

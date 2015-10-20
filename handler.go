@@ -171,8 +171,7 @@ func handleMsg(session sockjs.Session, msg string) {
 				if player.GroupHosted.Playing {
 					player.GroupHosted.Playing = false
 					player.InGame = false
-					for e := player.GroupHosted.Players.Front(); e != nil; e = e.Next() {
-						p := e.Value.(*GamePlayer)
+					for _, p := range player.GroupHosted.Players {
 						p.InGame = false
 					}
 					player.GroupHosted.NotifyAllExcept(CmdHostStop, "", player)

@@ -57,10 +57,10 @@ type ErrorMessage struct {
 }
 
 type GroupListMessage struct {
-	Info    *MyInfo     `json:"myInfo"`
-	Joined  *GroupInfo  `json:"joined"`
-	Waiting []GroupInfo `json:"waiting"`
-	Playing []GroupInfo `json:"playing"`
+	Info    *MyInfo        `json:"myInfo"`
+	Joined  *SimpleGroup   `json:"joined"`
+	Waiting []*SimpleGroup `json:"waiting"`
+	Playing []*SimpleGroup `json:"playing"`
 }
 
 type StartGameMessage struct {

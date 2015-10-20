@@ -1,7 +1,6 @@
 package grouplay
 
 import (
-	"container/list"
 	"fmt"
 )
 
@@ -16,26 +15,32 @@ func init() {
 }
 
 type GameGroup struct {
-	ID             string
-	Host           *GamePlayer
-	MaxPlayer      int
-	Players        *list.List
-	Spectators     *list.List
-	AllowSpectator bool
-	Playing        bool
-	Game           *Game
+	ID             string        `json:"host"`
+	Host           *GamePlayer   `json:"host"`
+	MaxPlayer      int           `json:"limit"`
+	Players        []*GamePlayer `json:"players"`
+	Spectators     []*GamePlayer `json:"spectators"`
+	AllowSpectator bool          `json:"allowSpectator"`
+	Playing        bool          `json:"playing"`
+	Game           *Game         `json:"game"`
 }
 
-type GroupInfo struct {
-	Host           string `json:"host"`
-	ID             string `json:"id"`
-	Limit          int    `json:"limit"`
-	Players        int    `json:"current"`
-	Spectators     int    `json:"spectators"`
-	AllowSpectator bool   `json:"allowSpectator"`
-	Playing        bool   `json:"playing"`
-	Game           *Game  `json:"game"`
+type SimpleGroup struct {
+	ID             string          `json:"id"`
+	Host           *SimplePlayer   `json:"host"`
+	MaxPlayer      int             `json:"limit"`
+	Players        []*SimplePlayer `json:"players"`
+	Spectators     []*SimplePlayer `json:"spectators"`
+	AllowSpectator bool            `json:"allowSpectator"`
+	Playing        bool            `json:"playing"`
+	Game           *Game           `json:"game"`
 }
+
+type SimplePlayer struct {
+	Name string `json:"name"`
+	ID   string `json:""`
+}
+
 type MyInfo struct {
 	Session string `json:"session"`
 	InGame  bool   `json:"ingame"`
@@ -47,13 +52,14 @@ func (g *GameGroup) Join(p *GamePlayer) error {
 	if g.Playing {
 		return NewError("The game has been already started, try spectating!")
 	}
-	if length := g.Players.Len(); length == g.MaxPlayer {
+
+	if length := len(g.Players); length == g.MaxPlayer {
 		return NewError("Player number has reached the max size.")
 	}
 	if g.Exist(p) {
 		return NewError("Already added into the group.")
 	}
-	g.Players.PushBack(p)
+	g.Players = append(g.Players, p)
 	return nil
 }
 
@@ -61,12 +67,11 @@ func (g *GameGroup) Exit(p *GamePlayer) error {
 	if g.Playing {
 		return NewError("The game has been already started, can't exit!")
 	}
-	for e := g.Players.Front(); e != nil; e = e.Next() {
-		player := e.Value.(*GamePlayer)
+	for i, player := range g.Players {
 		if player == p {
 			// Remove relation
 			player.GroupJoined = nil
-			g.Players.Remove(e)
+			g.Players = append(g.Players[:i], g.Players[i+1:]...)
 			// If is host of a group
 			if player.GroupHosted != nil {
 				player.GroupHosted.Host = nil
@@ -74,9 +79,9 @@ func (g *GameGroup) Exit(p *GamePlayer) error {
 				delete(groups, g.ID)
 			}
 			// Set new mapping
-			if g.Players.Len() > 0 {
+			if len(g.Players) > 0 {
 				if g.Host == nil {
-					newHost := g.Players.Front().Value.(*GamePlayer)
+					newHost := g.Players[0]
 					g.Host = newHost
 					g.ID = newHost.ID
 					newHost.GroupHosted = g
@@ -90,8 +95,7 @@ func (g *GameGroup) Exit(p *GamePlayer) error {
 }
 
 func (g *GameGroup) Exist(p *GamePlayer) bool {
-	for e := g.Players.Front(); e != nil; e = e.Next() {
-		player := e.Value.(*GamePlayer)
+	for _, player := range g.Players {
 		if player == p {
 			return true
 		}
@@ -114,8 +118,8 @@ func CreateGroup(game *Game, player *GamePlayer, max int, allowSpectate bool) (g
 		ID:             player.ID,
 		Host:           player,
 		MaxPlayer:      max,
-		Players:        list.New(),
-		Spectators:     list.New(),
+		Players:        make([]*GamePlayer, 0),
+		Spectators:     make([]*GamePlayer, 0),
 		AllowSpectator: allowSpectate,
 		Playing:        false,
 		Game:           game,
@@ -125,43 +129,56 @@ func CreateGroup(game *Game, player *GamePlayer, max int, allowSpectate bool) (g
 	return group
 }
 
+func generateSimplePlayer(p *GamePlayer) *SimplePlayer {
+	simple := SimplePlayer{
+		ID:   p.ID,
+		Name: p.Name,
+	}
+	return &simple
+}
+
+func generateSimplePlayerArray(list []*GamePlayer) []*SimplePlayer {
+	simple := make([]*SimplePlayer, len(list))
+	for i, p := range list {
+		simple[i] = generateSimplePlayer(p)
+	}
+	return simple
+}
+
+func generateSimpleGroup(g *GameGroup) *SimpleGroup {
+	simple := SimpleGroup{
+		ID:             g.ID,
+		Host:           generateSimplePlayer(g.Host),
+		MaxPlayer:      g.MaxPlayer,
+		Players:        generateSimplePlayerArray(g.Players),
+		Spectators:     generateSimplePlayerArray(g.Spectators),
+		AllowSpectator: g.AllowSpectator,
+		Playing:        g.Playing,
+		Game:           g.Game,
+	}
+	return &simple
+}
+
 func BuildGroupList() GroupListMessage {
-	waiting := make([]GroupInfo, 0)
-	playing := make([]GroupInfo, 0)
+	waiting := make([]*SimpleGroup, 0)
+	playing := make([]*SimpleGroup, 0)
 	for _, group := range groups {
-		info := GroupInfo{
-			Host:           group.Host.Name,
-			ID:             group.ID,
-			Limit:          group.MaxPlayer,
-			Players:        group.Players.Len(),
-			Spectators:     group.Spectators.Len(),
-			AllowSpectator: group.AllowSpectator,
-			Playing:        group.Playing,
-			Game:           group.Game,
-		}
+		simpleGroup := generateSimpleGroup(group)
 		if group.Playing {
 			fmt.Println("Add playing group")
-			playing = append(playing, info)
+			playing = append(playing, simpleGroup)
 		} else {
 			fmt.Println("Add waiting group")
-			waiting = append(waiting, info)
+			waiting = append(waiting, simpleGroup)
 		}
 	}
 	return GroupListMessage{nil, nil, waiting, playing}
 }
+
 func NotifyGroupListToOne(p *GamePlayer) {
 	groupList := BuildGroupList()
 	if p.GroupJoined != nil {
-		groupList.Joined = &GroupInfo{
-			Host:           p.GroupJoined.Host.Name,
-			ID:             p.GroupJoined.ID,
-			Limit:          p.GroupJoined.MaxPlayer,
-			Players:        p.GroupJoined.Players.Len(),
-			Spectators:     p.GroupJoined.Spectators.Len(),
-			AllowSpectator: p.GroupJoined.AllowSpectator,
-			Playing:        p.GroupJoined.Playing,
-			Game:           p.GroupJoined.Game,
-		}
+		groupList.Joined = generateSimpleGroup(p.GroupJoined)
 	} else {
 		groupList.Joined = nil
 	}
@@ -173,16 +190,7 @@ func NotifyGroupListToAll() {
 	groupList := BuildGroupList()
 	for _, p := range players {
 		if p.GroupJoined != nil {
-			groupList.Joined = &GroupInfo{
-				Host:           p.GroupJoined.Host.Name,
-				ID:             p.GroupJoined.ID,
-				Limit:          p.GroupJoined.MaxPlayer,
-				Players:        p.GroupJoined.Players.Len(),
-				Spectators:     p.GroupJoined.Spectators.Len(),
-				AllowSpectator: p.GroupJoined.AllowSpectator,
-				Playing:        p.GroupJoined.Playing,
-				Game:           p.GroupJoined.Game,
-			}
+			groupList.Joined = generateSimpleGroup(p.GroupJoined)
 		} else {
 			groupList.Joined = nil
 		}
@@ -193,8 +201,7 @@ func NotifyGroupListToAll() {
 }
 
 func (g *GameGroup) NotifyPlayerExcept(cmd string, msg interface{}, player *GamePlayer) {
-	for e := g.Players.Front(); e != nil; e = e.Next() {
-		p := e.Value.(*GamePlayer)
+	for _, p := range g.Players {
 		if p != player {
 			SendStructMessage(*p.Session, cmd, msg, true)
 		}
@@ -206,8 +213,7 @@ func (g *GameGroup) NotifyPlayer(cmd string, msg interface{}) {
 }
 
 func (g *GameGroup) NotifySpectatorExcept(cmd string, msg interface{}, player *GamePlayer) {
-	for e := g.Spectators.Front(); e != nil; e = e.Next() {
-		p := e.Value.(*GamePlayer)
+	for _, p := range g.Spectators {
 		if p != player {
 			SendStructMessage(*p.Session, cmd, msg, true)
 		}
