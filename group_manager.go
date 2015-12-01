@@ -63,6 +63,22 @@ func (g *GameGroup) Join(p *GamePlayer) error {
 	return nil
 }
 
+// Spectate : Let a player spectate a group game if it is playing.
+func (g *GameGroup) Spectate(p *GamePlayer) error {
+	fmt.Println("GameGroup1==>", g)
+	if g.Playing {
+		if length := len(g.Players); length == g.MaxPlayer {
+			g.Spectators = append(g.Spectators, p)
+		} else {
+			return NewError("The player have left!")
+		}
+	} else {
+		return NewError("The game not start, try to join it!")
+	}
+	fmt.Println("GameGroup2==>", g)
+	return nil
+}
+
 func (g *GameGroup) Exit(p *GamePlayer) error {
 	if g.Playing {
 		return NewError("The game has been already started, can't exit!")
@@ -175,6 +191,18 @@ func BuildGroupList() GroupListMessage {
 	return GroupListMessage{nil, nil, waiting, playing}
 }
 
+func NotifyGroupListToSpectator(p *GamePlayer) {
+	groupList := BuildGroupList()
+	if p.GroupSpectating != nil {
+		groupList.Joined = generateSimpleGroup(p.GroupSpectating)
+	} else {
+		groupList.Joined = nil
+	}
+	// Create my info
+	groupList.Info = &MyInfo{p.ID, p.InGame, p.Index}
+	SendStructMessage(*p.Session, CmdGroupUpdate, groupList, true)
+}
+
 func NotifyGroupListToOne(p *GamePlayer) {
 	groupList := BuildGroupList()
 	if p.GroupJoined != nil {
@@ -189,6 +217,7 @@ func NotifyGroupListToOne(p *GamePlayer) {
 func NotifyGroupListToAll() {
 	groupList := BuildGroupList()
 	for _, p := range players {
+		fmt.Println("player-->", p)
 		if p.GroupJoined != nil {
 			groupList.Joined = generateSimpleGroup(p.GroupJoined)
 		} else {

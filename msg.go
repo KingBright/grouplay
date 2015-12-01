@@ -8,21 +8,23 @@ import (
 
 // Communicate protocal.
 const (
-	CmdRegister     = "register"
-	CmdCreateGroup  = "create_group"
-	CmdExitGroup    = "exit_group"
-	CmdJoinGroup    = "join_group"
-	CmdGroupUpdate  = "group_update"
-	CmdUpdateData   = "update_data"
-	CmdStartGame    = "start_game"
-	CmdGetData      = "get_data"
-	CmdPlaying      = "playing"
-	CmdPlayerAction = "player_action"
-	CmdStopGame     = "stop_game"
-	CmdQuitGame     = "quit_game"
-	CmdGameFinished = "game_finished"
-	CmdHostStop     = "host_stop"
-	CmdGetGameList  = "get_game_list"
+	CmdRegister       = "register"
+	CmdCreateGroup    = "create_group"
+	CmdExitGroup      = "exit_group"
+	CmdJoinGroup      = "join_group"
+	CmdGroupUpdate    = "group_update"
+	CmdUpdateData     = "update_data"
+	CmdStartGame      = "start_game"
+	CmdGetData        = "get_data"
+	CmdPlaying        = "playing"
+	CmdPlayerAction   = "player_action"
+	CmdStopGame       = "stop_game"
+	CmdQuitGame       = "quit_game"
+	CmdGameFinished   = "game_finished"
+	CmdHostStop       = "host_stop"
+	CmdGetGameList    = "get_game_list"
+	CmdSpectateGame   = "spectate_game"
+	CmdStopSpectating = "stop_spectating"
 )
 
 // Message format for transaction between server & client.
@@ -48,6 +50,10 @@ type JoinGroupMessage struct {
 }
 
 type ExitGroupMessage struct {
+	GroupId string `json:"groupId"`
+}
+
+type SpectateGroupMessage struct {
 	GroupId string `json:"groupId"`
 }
 
