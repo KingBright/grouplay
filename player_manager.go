@@ -108,6 +108,23 @@ func (p *GamePlayer) JoinGroup(id string) (bool, error) {
 	return false, NewError("Target group not found.")
 }
 
+func (p *GamePlayer) SpectateGame(id string) (bool, error) {
+	if p.GroupSpectating != nil {
+		fmt.Println("Already spectate a group.")
+		return false, NewError("You Already spectate a group.")
+	}
+	if group, ok := FindGroup(id); ok {
+		if err := group.Spectate(p); err == nil {
+			p.GroupSpectating = group
+			return true, nil
+		} else {
+			return false, err
+		}
+	}
+	fmt.Println("Target group not found.")
+	return false, NewError("Target group not found.")
+}
+
 func (p *GamePlayer) ExitGroup(id string) (bool, error) {
 	if p.GroupJoined != nil {
 		if err := p.GroupJoined.Exit(p); err == nil {

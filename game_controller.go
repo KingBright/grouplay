@@ -1,5 +1,7 @@
 package grouplay
 
+import "fmt"
+
 var controllers map[*GameGroup]GameController
 
 func init() {
@@ -80,17 +82,26 @@ func UpdateData(player *GamePlayer, group *GameGroup, action, data string) error
 }
 
 func GetDataForPlayer(player *GamePlayer) error {
+	var gamegroup *GameGroup
 	if player.GroupJoined == nil {
-		return NewError("You are not in a group.")
-	}
-	if !player.GroupJoined.Playing {
+		if player.GroupSpectating == nil {
+			return NewError("You are not in a group.")
+		} else if !player.GroupSpectating.Playing {
+			return NewError("Game is not started!")
+		} else {
+			gamegroup = player.GroupSpectating
+		}
+	} else if !player.GroupJoined.Playing {
 		return NewError("Game is not started!")
+	} else {
+		gamegroup = player.GroupJoined
 	}
-	controller := controllers[player.GroupJoined]
+	fmt.Println("gamegroup--->", gamegroup)
+	controller := controllers[gamegroup]
 	if controller == nil {
 		return NewError("Controller is empty!")
 	}
-	notifyPlayer(player, CmdUpdateData, controller.GetData(player, player.GroupJoined))
+	notifyPlayer(player, CmdUpdateData, controller.GetData(player, gamegroup))
 	return nil
 }
 

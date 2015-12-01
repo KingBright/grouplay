@@ -154,7 +154,7 @@ func handleMsg(session sockjs.Session, msg string) {
 					SendErrorMessage(session, message.Cmd, err.Error(), false, true)
 				}
 			} else {
-				err := NewError("You are not in a group")
+				err := NewError("You are not playing in the group")
 				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
 			}
 		} else {
@@ -181,5 +181,48 @@ func handleMsg(session sockjs.Session, msg string) {
 		}
 	case CmdGetGameList:
 		SendStructMessage(session, message.Cmd, GetGameList(), true)
+	case CmdSpectateGame:
+		if player, ok := FindPlayer(session.ID()); ok {
+			decoder := json.NewDecoder(strings.NewReader(message.Msg))
+			spectInfo := new(SpectateGroupMessage)
+			decoder.Decode(spectInfo)
+
+			if ok, err := player.SpectateGame(spectInfo.GroupId); ok {
+				player.Index = 5
+				NotifyGroupListToSpectator(player)
+				SendStructMessage(session, message.Cmd, struct {
+					ID string `json:"groupId"`
+					OK bool   `json:"ok"`
+				}{ID: player.GroupSpectating.ID, OK: true}, true)
+			} else {
+				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
+			}
+		} else {
+			err := NewError("No user found with id " + session.ID())
+			SendErrorMessage(session, message.Cmd, err.Error(), false, true)
+		}
+	case CmdStopSpectating:
+		if player, ok := FindPlayer(session.ID()); ok {
+			if player.GroupSpectating != nil {
+				for i, spectator := range player.GroupSpectating.Spectators {
+					if player == spectator {
+						player.GroupSpectating.Spectators = append(player.GroupSpectating.Spectators[:i], player.GroupSpectating.Spectators[i+1:]...)
+						player.GroupSpectating = nil
+						player.InGame = false
+						player.Index = 0
+
+						NotifyGroupListToSpectator(player)
+						return
+					}
+				}
+				err := NewError("Not found the spectator ")
+				SendErrorMessage(session, message.Cmd, err.Error(), false, true)
+			}
+
+		} else {
+			err := NewError("No user found with id " + session.ID())
+			SendErrorMessage(session, message.Cmd, err.Error(), false, true)
+		}
+
 	}
 }
